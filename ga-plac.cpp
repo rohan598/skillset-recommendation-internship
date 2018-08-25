@@ -8,11 +8,16 @@
 #define POP 100
 #define WEIGHT 60
 #define FEA 20
-#define TERMINATION 95
+#define TERMINATION 80
 #define TOURNAMENT 20
 #define CROSSRATIO 20
 #define GENLIMIT 100
+#define STEADY 1
+#define GEN 0
 using namespace std;
+
+
+// Structures
 
 // item structure
 struct item{
@@ -25,8 +30,94 @@ struct chromosomes{
 	int fitness;	
 	int weight;
 	int gen;
-	chromosomes():chromosome(FEA,0),fitness(0),weight(0),gen(0){}
+	chromosomes():chromosome(20,0),fitness(0),weight(0),gen(0){}
 };
+
+// roulette structure
+class roulette{
+	unordered_map <int,int> m;
+	unordered_map <int,vector<chromosomes> > mapping;
+public:
+	void wrapperChromosome(chromosomes &c){
+		if(m.find(c.fitness)==m.end()){
+			addChromosome(c);
+			m[c.fitness]=1;
+			return;
+		}
+		else {
+			addChromosome(c);
+			incr(c.fitness);
+		}
+	}
+	
+	void addChromosome(chromosomes &c){
+		mapping[c.fitness].push_back(c);
+	}
+
+	void incr(int key){
+		m[key]++;
+	}
+
+
+	pair<chromosomes,chromosomes> parents(){
+		int size = m.size(), i = 0, flag = 0, f1, f2;
+		int random1 = rand()%POP ,random2 = rand()%POP;
+
+		// roulette wheel pointer creation
+		unordered_map <int,int> :: iterator prev = m.begin();
+		for(unordered_map <int,int> :: iterator it = m.begin(); it!=m.end(); ++it){
+			if(flag==2)
+				break;
+			i+=it->second;
+			if(i>=random1 && !flag){
+				f1 = prev->first;
+				flag++;
+			}
+			if(i>=random2){
+				f2 = prev->first;
+				flag++;
+			}
+			prev = it;
+		}
+
+		// roulette wheel selection
+		pair<chromosomes,chromosomes> p;
+		flag = 0;
+		// select parents
+		for(unordered_map <int,vector<chromosomes> > :: iterator it = mapping.begin(); it!=mapping.end(); ++it){
+			if(flag==2)
+				break;
+			if(it->first==f1){
+				int r = rand()%it->second.size();
+				p.first = it->second[r];
+				flag++;
+			}
+			if(it->first==f2){
+				int r = rand()%it->second.size();
+				p.second = it->second[r];
+				flag++;
+			}
+		}
+		return p;
+	}
+
+	// to check state of parent and offspring
+	void display(){
+		for(unordered_map <int,vector<chromosomes> > :: iterator it = mapping.begin(); it!=mapping.end(); ++it){
+			cout << "key: "<<it->first<<" ";
+			for(int i = 0; i < it->second.size(); ++i){
+				cout <<" vector: "<<i+1 <<" ";
+				for(int j =0; j < it->second[i].chromosome.size(); ++j){
+					cout<< it->second[i].chromosome[j]<<" ";
+				}
+				cout<<endl;
+			}
+			cout<<" fitness: "<< it->first<<" quantity: "<<m[it->first]<<endl;
+		}
+	}
+
+};
+
 
 // DEVELOPMENT FUNCTIONS
 
@@ -70,8 +161,13 @@ void functionTester(void (*testFunction)()){
 // HELPER FUNCTIONS
 
 // comparator for sorting on basis of fitness
-bool comparator(chromosomes a, chromosomes b){
+bool comparatorFitness(chromosomes a, chromosomes b){
 	return a.fitness > b.fitness;
+}
+
+// comparator for sorting on basis of age
+bool comparatorAge(chromosomes a, chromosomes b){
+	return a.gen > b.gen;
 }
 
 // for randomly flipping a bit
@@ -185,6 +281,21 @@ void fitnessFunction(vector<chromosomes> &c){
 	}
 }
 
+// selection operator - roulette
+pair<chromosomes,chromosomes> selectionRoulette(vector<chromosomes> &c){ 
+
+	// create roulette
+	roulette r;
+
+	// select parents
+	int key;
+	for(int i = 0; i < POP; ++i){
+		r.wrapperChromosome(c[i]);
+	}
+	return r.parents();
+}
+
+
 // selection operator - tournament
 pair<chromosomes,chromosomes> selectionTournament(vector<chromosomes> &c){ 
 	int k = TOURNAMENT, random;
@@ -193,13 +304,93 @@ pair<chromosomes,chromosomes> selectionTournament(vector<chromosomes> &c){
 		random = rand()%POP;
 		selected[i] = c[random];
 	}
-	sort(selected.begin(),selected.end(), comparator);
+	sort(selected.begin(),selected.end(), comparatorFitness);
 	pair<chromosomes,chromosomes> p;
 	p.first = selected[0];
 	p.second = selected[1];
 	return p;
 }
 
+
+// crossover operator - one point
+pair<chromosomes,chromosomes> crossoverOnePoint(pair<chromosomes,chromosomes> &p, int &gen){ 
+	pair<chromosomes,chromosomes> children;
+	int random = rand()%FEA;
+	for(int i = 0; i < FEA; ++i){
+		if(i>=random){
+			children.first.chromosome[i]=p.second.chromosome[i];
+			children.second.chromosome[i]=p.first.chromosome[i];
+		} else {
+			children.first.chromosome[i]=p.first.chromosome[i];
+			children.second.chromosome[i]=p.second.chromosome[i];
+		}
+	}
+	for(int i = 0; i < FEA; ++i){
+		if(children.first.weight>WEIGHT){
+			children.first.fitness = -1;
+			break;
+		}
+		if(children.first.chromosome[i]){
+			children.first.fitness+=listPop[i].v;
+			children.first.weight+=listPop[i].w;
+		}
+	}
+	for(int i = 0; i < FEA; ++i){
+		if(children.second.weight>WEIGHT){
+			children.second.fitness = -1;
+			break;
+		}
+		if(children.second.chromosome[i]){
+			children.second.fitness+=listPop[i].v;
+			children.second.weight+=listPop[i].w;
+		}
+	}
+	children.first.gen = children.second.gen = gen;
+	return children;
+}
+
+// crossover operator - two point
+pair<chromosomes,chromosomes> crossoverTwoPoint(pair<chromosomes,chromosomes> &p, int &gen){ 
+	pair<chromosomes,chromosomes> children;
+	int random1 = rand()%FEA;
+	int random2 = rand()%FEA;
+	if(random1>random2){
+		int t = random1;
+		random1 =random2;
+		random2 = t;
+	}
+	for(int i = 0; i < FEA; ++i){
+		if(i>=random1 && i<random2){
+			children.first.chromosome[i]=p.second.chromosome[i];
+			children.second.chromosome[i]=p.first.chromosome[i];
+		} else {
+			children.first.chromosome[i]=p.first.chromosome[i];
+			children.second.chromosome[i]=p.second.chromosome[i];
+		}
+	}
+	for(int i = 0; i < FEA; ++i){
+		if(children.first.weight>WEIGHT){
+			children.first.fitness = -1;
+			break;
+		}
+		if(children.first.chromosome[i]){
+			children.first.fitness+=listPop[i].v;
+			children.first.weight+=listPop[i].w;
+		}
+	}
+	for(int i = 0; i < FEA; ++i){
+		if(children.second.weight>WEIGHT){
+			children.second.fitness = -1;
+			break;
+		}
+		if(children.second.chromosome[i]){
+			children.second.fitness+=listPop[i].v;
+			children.second.weight+=listPop[i].w;
+		}
+	}
+	children.first.gen = children.second.gen = gen;
+	return children;
+}
 
 // crossover operator - uniform
 pair<chromosomes,chromosomes> crossoverUniform(pair<chromosomes,chromosomes> &p, int &gen){ 
@@ -233,14 +424,7 @@ pair<chromosomes,chromosomes> crossoverUniform(pair<chromosomes,chromosomes> &p,
 			children.second.weight+=listPop[i].w;
 		}
 	}
-	// see if to be removed
-	// coin toss for tie breaker
-	// 	if(coinToss()){
-	// 		chromosomes t = children.first;
-	// 		children.first = children.second;
-	// 		children.second = t;
-	// 	}
-	// } 
+
 	children.first.gen = children.second.gen = gen;
 	return children;
 }
@@ -257,35 +441,55 @@ void mutate(pair<chromosomes,chromosomes> &p){
 
 // wrapper function for three steps - selecting parent, cross-over, mutation
 vector<chromosomes> scmWrapper(vector<chromosomes> &c, int &gen){
+	
 	vector<chromosomes> children;
-	for(int i = 0; i < CROSSRATIO/2; ++i){
+
+	// choice between steady state and genearation cross over
+	int crossover = STEADY ? CROSSRATIO :  POP;
+
+	for(int i = 0; i < crossover/2; ++i){
 		//select()
-		pair<chromosomes,chromosomes> parent = selectionTournament(c);
+		pair<chromosomes,chromosomes> parent = selectionRoulette(c);
 		
 		//crossover() 
 		pair<chromosomes,chromosomes> child = crossoverUniform(parent,gen);
 		
 		//mutate()
 		mutate(child);
-		if(child.first.fitness!=-1)
+		if(child.first.fitness>0)
 			children.push_back(child.first);
-		if(child.second.fitness!=-1)
+		if(child.second.fitness>0)
 			children.push_back(child.second);
 	}
 	return children;
 }
 
-// survivor selection - fitness
-void survivorSelectionFitness(vector<chromosomes> &c, vector<chromosomes> &p){ // survivor selection operator - steady state k
+// survivor selection - age
+void survivorSelectionAge(vector<chromosomes> &c, vector<chromosomes> &p){ 
 
 	// sort parent array according to fitness
-	sort(c.begin(), c.end(),comparator);
+	sort(c.begin(), c.end(),comparatorAge);
+
+	// replace
+	for(int i = POP-p.size(), k=0; i< POP; ++i,k++){ 
+		c[i] = p[k];
+	}	
+
+}
+
+// survivor selection - fitness
+void survivorSelectionFitness(vector<chromosomes> &c, vector<chromosomes> &p){ 
+	
+	// sort parent array according to fitness
+	sort(c.begin(), c.end(),comparatorFitness);
 
 	// sort children array according to fitness
-	sort(p.begin(), p.end(),comparator);
+	sort(p.begin(), p.end(),comparatorFitness);
 
 	// replace
 	for(int i = POP-p.size(), k=0; i< POP; ++i,k++){ // remove last k of a generation
+		if(p[k].fitness<c[i].fitness)
+			continue;
 		c[i] = p[k];
 	}	
 
@@ -293,24 +497,29 @@ void survivorSelectionFitness(vector<chromosomes> &c, vector<chromosomes> &p){ /
 
 // terminating condition - generation number or iteration
 bool terminateGenLimit(int &gen){
-	return gen<=GENLIMIT;
+	return gen>GENLIMIT;
 }
 
 // terminating condition - population
-bool terminatePop(vector<chromosomes> &c){ // terminating condition on similarity of solution 90% of pop
+bool terminatePop(vector<chromosomes> &c){ 
 	unordered_map<int,int> m;
+	int maxFitness = -1;
 	for(int i = 0; i < POP; ++i){
+		if(c[i].fitness>maxFitness)
+			maxFitness = c[i].fitness;
 		if(m.find(c[i].fitness)==m.end())
 			m[c[i].fitness]=0;
 		else
 			m[c[i].fitness]++;
 	}
-	int max = 0;
+	int max = 0, t;
 	for(unordered_map<int,int> :: iterator it = m.begin(); it!=m.end(); ++it){
-		if(it->second>max)
+		if(it->second>max){
 			max = it->second;
+			t = it->first;
+		}
 	}
-	return max >=TERMINATION;
+	return maxFitness==t?(max >=TERMINATION?true:false):false;
 }
 
 //  solution of given GA
@@ -343,8 +552,8 @@ int main(){
 	float avg;
 
 	// files for best and avg graph CSV
-	ofstream fa("average.csv");
-	ofstream fb("best.csv");
+	ofstream fa("/Users/akroh/Desktop/ga-assignment/average.csv");
+	ofstream fb("/Users/akroh/Desktop/ga-assignment/best.csv");
 
 	// main loop
 	do{
