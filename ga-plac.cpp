@@ -8,12 +8,13 @@
 #define POP 100
 #define WEIGHT 60
 #define FEA 20
-#define TERMINATION 80
-#define TOURNAMENT 20
-#define CROSSRATIO 20
+#define TERMINATION 85
+#define TOURNAMENT 20 
+#define CROSSRATIO 10
 #define GENLIMIT 100
 #define STEADY 1
 #define GEN 0
+#define MUTRATIO 10
 using namespace std;
 
 
@@ -104,14 +105,14 @@ public:
 	// to check state of parent and offspring
 	void display(){
 		for(unordered_map <int,vector<chromosomes> > :: iterator it = mapping.begin(); it!=mapping.end(); ++it){
-			cout << "key: "<<it->first<<" ";
-			for(int i = 0; i < it->second.size(); ++i){
-				cout <<" vector: "<<i+1 <<" ";
-				for(int j =0; j < it->second[i].chromosome.size(); ++j){
-					cout<< it->second[i].chromosome[j]<<" ";
-				}
-				cout<<endl;
-			}
+			// cout << "key: "<<it->first<<" ";
+			// for(int i = 0; i < it->second.size(); ++i){
+			// 	cout <<" vector: "<<i+1 <<" ";
+			// 	for(int j =0; j < it->second[i].chromosome.size(); ++j){
+			// 		cout<< it->second[i].chromosome[j]<<" ";
+			// 	}
+			// 	cout<<endl;
+			// }
 			cout<<" fitness: "<< it->first<<" quantity: "<<m[it->first]<<endl;
 		}
 	}
@@ -123,7 +124,7 @@ public:
 
 // to display chromosomes and to their state
 void display(vector<chromosomes> &c){ 
-	for(int i = 0; i < POP; ++i){
+	for(int i = 0; i < c.size(); ++i){
 		for(int j = 0; j < FEA; ++j){
 			cout << c[i].chromosome[j]<<" ";
 		}		
@@ -244,16 +245,17 @@ void setItem(){
 // make intial population
 void make_population(vector<chromosomes> &c){  
 	for(int i = 0; i < POP; ++i){
-		int w =  0;
-		while(w<WEIGHT){
+		int w =  0,v=0;
+		while(w<=WEIGHT){
 			int random = rand()%FEA;
 			if(c[i].chromosome[random]==0){
 				w+= listPop[random].w;
 				c[i].chromosome[random]=1;
-				c[i].fitness+=listPop[random].v;
+				v+=listPop[random].v;
 			}
 		}
 		c[i].weight = w;
+		c[i].fitness = v;
 	}
 }
 
@@ -263,18 +265,19 @@ void fitnessFunction(vector<chromosomes> &c){
 	for(int i = 0; i < POP; ++i){
 		int v = 0, w =0,j =0, in = 0;
 		while(j<FEA){
-			for(; j < FEA; ++j){
-				if(w>WEIGHT)
-					break;
+			for(; j < FEA && w<=WEIGHT; ++j){
 				if(c[i].chromosome[j]){
 					v+=listPop[j].v;
 					w+=listPop[j].w;
 					in = j;
 				}
 			}
-			v-=listPop[in].v;
-			w-=listPop[in].w;
-			c[i].chromosome[in]=0;
+
+			if(w>WEIGHT){
+				v-=listPop[in].v;
+				w-=listPop[in].w;
+				c[i].chromosome[in]=0;
+			}
 		}
 		c[i].fitness = v;
 		c[i].weight = w;
@@ -292,6 +295,7 @@ pair<chromosomes,chromosomes> selectionRoulette(vector<chromosomes> &c){
 	for(int i = 0; i < POP; ++i){
 		r.wrapperChromosome(c[i]);
 	}
+	r.display();
 	return r.parents();
 }
 
@@ -335,6 +339,9 @@ pair<chromosomes,chromosomes> crossoverOnePoint(pair<chromosomes,chromosomes> &p
 			children.first.weight+=listPop[i].w;
 		}
 	}
+	if(children.first.weight>WEIGHT){
+		children.first.fitness = -1;
+	}
 	for(int i = 0; i < FEA; ++i){
 		if(children.second.weight>WEIGHT){
 			children.second.fitness = -1;
@@ -344,6 +351,9 @@ pair<chromosomes,chromosomes> crossoverOnePoint(pair<chromosomes,chromosomes> &p
 			children.second.fitness+=listPop[i].v;
 			children.second.weight+=listPop[i].w;
 		}
+	}
+	if(children.second.weight>WEIGHT){
+		children.second.fitness = -1;
 	}
 	children.first.gen = children.second.gen = gen;
 	return children;
@@ -378,6 +388,9 @@ pair<chromosomes,chromosomes> crossoverTwoPoint(pair<chromosomes,chromosomes> &p
 			children.first.weight+=listPop[i].w;
 		}
 	}
+	if(children.first.weight>WEIGHT){
+		children.first.fitness = -1;
+	}
 	for(int i = 0; i < FEA; ++i){
 		if(children.second.weight>WEIGHT){
 			children.second.fitness = -1;
@@ -387,6 +400,9 @@ pair<chromosomes,chromosomes> crossoverTwoPoint(pair<chromosomes,chromosomes> &p
 			children.second.fitness+=listPop[i].v;
 			children.second.weight+=listPop[i].w;
 		}
+	}
+	if(children.second.weight>WEIGHT){
+		children.second.fitness = -1;
 	}
 	children.first.gen = children.second.gen = gen;
 	return children;
@@ -414,6 +430,9 @@ pair<chromosomes,chromosomes> crossoverUniform(pair<chromosomes,chromosomes> &p,
 			children.first.weight+=listPop[i].w;
 		}
 	}
+	if(children.first.weight>WEIGHT){
+		children.first.fitness = -1;
+	}
 	for(int i = 0; i < FEA; ++i){
 		if(children.second.weight>WEIGHT){
 			children.second.fitness = -1;
@@ -424,18 +443,43 @@ pair<chromosomes,chromosomes> crossoverUniform(pair<chromosomes,chromosomes> &p,
 			children.second.weight+=listPop[i].w;
 		}
 	}
+	if(children.second.weight>WEIGHT){
+		children.second.fitness = -1;
+	}
 
 	children.first.gen = children.second.gen = gen;
 	return children;
 }
 
 // mutation operator - single bit
-void mutate(pair<chromosomes,chromosomes> &p){ 
+void mutateSingleBit(pair<chromosomes,chromosomes> &p){ 
 	int random = rand() % 1000 + 1;
-	if(random<=10){
-		random = random%100; 
+	if(random<=MUTRATIO*10){
+		random = random%FEA; 
 		p.first.chromosome[random]^=1;
+		if(p.first.chromosome[random]==1){
+			if((p.first.weight+listPop[random].w)>WEIGHT)
+				p.first.chromosome[random]=0;	
+			else{
+				p.first.fitness+=listPop[random].v;
+				p.first.weight+=listPop[random].w;
+			}
+		} else{
+			p.first.fitness-=listPop[random].v;
+			p.first.weight-=listPop[random].w;
+		}
 		p.second.chromosome[random]^=1;
+		if(p.second.chromosome[random]==1){
+			if((p.second.weight+listPop[random].w)>WEIGHT)
+				p.second.chromosome[random]=0;	
+			else{
+				p.second.fitness+=listPop[random].v;
+				p.second.weight+=listPop[random].w;
+			}
+		} else{
+			p.second.fitness-=listPop[random].v;
+			p.second.weight-=listPop[random].w;
+		}
 	}
 }
 
@@ -452,10 +496,10 @@ vector<chromosomes> scmWrapper(vector<chromosomes> &c, int &gen){
 		pair<chromosomes,chromosomes> parent = selectionRoulette(c);
 		
 		//crossover() 
-		pair<chromosomes,chromosomes> child = crossoverUniform(parent,gen);
+		pair<chromosomes,chromosomes> child = crossoverTwoPoint(parent,gen);
 		
 		//mutate()
-		mutate(child);
+		mutateSingleBit(child);
 		if(child.first.fitness>0)
 			children.push_back(child.first);
 		if(child.second.fitness>0)
@@ -508,7 +552,7 @@ bool terminatePop(vector<chromosomes> &c){
 		if(c[i].fitness>maxFitness)
 			maxFitness = c[i].fitness;
 		if(m.find(c[i].fitness)==m.end())
-			m[c[i].fitness]=0;
+			m[c[i].fitness]=1;
 		else
 			m[c[i].fitness]++;
 	}
@@ -552,8 +596,8 @@ int main(){
 	float avg;
 
 	// files for best and avg graph CSV
-	ofstream fa("/Users/akroh/Desktop/ga-assignment/average.csv");
-	ofstream fb("/Users/akroh/Desktop/ga-assignment/best.csv");
+	ofstream fa("average.csv");
+	ofstream fb("best.csv");
 
 	// main loop
 	do{
