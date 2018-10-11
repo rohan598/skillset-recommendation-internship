@@ -1,7 +1,7 @@
 #include <math.h>
 #include <time.h>
-#include<bits/stdc++.h>
-#include<unordered_map>
+#include <bits/stdc++.h>
+#include <unordered_map>
 #include <fstream>
 #include <limits.h>
 #define ll long long
@@ -58,7 +58,6 @@ public:
 	void incr(int key){
 		m[key]++;
 	}
-
 
 	pair<chromosomes,chromosomes> parents(){
 		int size = m.size(), i = 0, flag = 0, f1, f2;
@@ -122,12 +121,12 @@ public:
 
 // DEVELOPMENT FUNCTIONS
 
-// to display chromosomes and to their state
+// to display chromosomes and their state
 void display(vector<chromosomes> &c){ 
 	for(int i = 0; i < c.size(); ++i){
 		for(int j = 0; j < FEA; ++j){
 			cout << c[i].chromosome[j]<<" ";
-		}		
+		}
 		cout<<endl<<"f: "<<c[i].fitness<<" w: "<<c[i].weight<<" g: "<<c[i].gen<<endl;
 	}
 }
@@ -157,7 +156,6 @@ void randomGenerator(){
 void functionTester(void (*testFunction)()){
 	testFunction();
 }
-
 
 // HELPER FUNCTIONS
 
@@ -286,7 +284,6 @@ void fitnessFunction(vector<chromosomes> &c){
 
 // selection operator - roulette
 pair<chromosomes,chromosomes> selectionRoulette(vector<chromosomes> &c){ 
-
 	// create roulette
 	roulette r;
 
@@ -517,7 +514,7 @@ void survivorSelectionAge(vector<chromosomes> &c, vector<chromosomes> &p){
 	// replace
 	for(int i = POP-p.size(), k=0; i< POP; ++i,k++){ 
 		c[i] = p[k];
-	}	
+	}
 
 }
 
