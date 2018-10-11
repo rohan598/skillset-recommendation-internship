@@ -22,8 +22,9 @@ using namespace std;
 
 // item structure
 struct item{
-	int w,v;
-}listPop[20];
+	int w,v, index;
+};
+vector<item> listPop;
 
 // chromosome
 struct chromosomes{
@@ -197,7 +198,7 @@ int plotterBest(vector<chromosomes> &c){
 // MAIN FUNCTIONS
 
 // set item value and weight
-void setItem(){ 
+/*void setItem(){ 
 	listPop[0].w = 15; // 1 company dreams/a++/a+
 	listPop[0].v = 500;
 	listPop[1].w = 10; // 2 company a/b
@@ -238,7 +239,7 @@ void setItem(){
 	listPop[18].v = 50; 
 	listPop[19].w = 2; // 20 resume
 	listPop[19].v = 300; 
-}
+}*/
 
 // make intial population
 void make_population(vector<chromosomes> &c){  
@@ -573,13 +574,323 @@ int solutionGA(vector<chromosomes> &c){
 	return res;
 }
 
+class InputClass{
+public:
+	int domainOption;
+	int companyOption;
+	unordered_set<int> knownSkills;
+};
+
+InputClass inputFunction(){
+	//domain vector
+	vector<vector<string> > domainVector(7);
+
+	//hardcoded sample values
+	domainVector[0].push_back("Deloitte");
+	domainVector[0].push_back("Bane & Co.");
+	domainVector[1].push_back("Amazon Web Services");
+	domainVector[1].push_back("Salesforce");
+	domainVector[2].push_back("Google");
+	domainVector[2].push_back("Yahoo");
+	domainVector[3].push_back("Oracle CRM");
+	domainVector[3].push_back("SAP CRM");
+	domainVector[4].push_back("Digital Ocean");
+	domainVector[4].push_back("Hackerrank");
+	domainVector[5].push_back("Nvidia");
+	domainVector[5].push_back("Western Digital");
+
+	//big five not included. Didn't feel right
+
+	int domainOption, companyOption;
+
+	cout << "Select the domain of the company\n";
+	cout << "1. Finance \n2. Cloud Solutions \n3. Data Scientist \n4. CRM/CXM \n5. Full Stack Developer \n" 
+		 << "6. Hardware \n";
+
+	cin >> domainOption;
+	
+	cout << "Select the domain of the company\n";
+	for(int i=0; i < domainVector[domainOption-1].size(); ++i){
+		cout << i+1 << ". " << domainVector[domainOption-1][i] << endl;
+	}
+
+	cin >> companyOption;
+
+	cout << "Enter the skills you already know: \n";
+	cout << "1. Competitive Programming\n" <<
+		"2. Geeks for Geeks\n" <<
+		"3. Operating System\n" <<
+		"4. Database Management\n" <<
+		"5. Computer Networking\n" <<
+		"6. Object Oriented Programming\n" <<
+		"7. C/C++\n" <<
+		"8. JAVA\n" <<
+		"9. Python\n" <<
+		"10. JavaScript\n" <<
+		"11. Web Development\n" <<
+		"12. App Development\n" <<
+		"13. Machine Learning\n" <<
+		"14. Deep Learning\n" <<
+		"15. Big Data Analytics\n" <<
+		"16. Cloud Computing\n" <<
+		"17. High Performance Computing\n" <<
+		"18. IOT\n" <<
+		"19. Artificial Intelligence\n" <<
+		"20. Natural Language Processing\n" <<
+		"21. Microprocessors\n" <<
+		"22. Stock Market\n" << 
+		"23. Investment Strategy\n" <<
+		"24. Sales and Marketing\n" << 
+		"Press -1 to stop\n";
+
+	unordered_set<int> knownSkills;
+
+	int input;
+	while(cin >> input && input != -1){
+		knownSkills.insert(input-1);
+	}
+
+	InputClass curInput;
+	curInput.domainOption = domainOption;
+	curInput.companyOption = companyOption;
+	curInput.knownSkills = knownSkills;
+
+	return curInput;
+}
+
+int rows = 6;
+vector<int> valueDB(24);
+vector<int> weightDB(24);
+vector<vector<unordered_set<int> > > compulsoryDB(rows);
+
+void initialiseDB(){
+	int cols = 2;
+	for(int i = 0; i < rows; ++i){
+		compulsoryDB[i] = vector<unordered_set<int> >(cols);
+	}
+
+	//valueDB
+	valueDB[0] = 250;
+	valueDB[1] = 500;
+	valueDB[2] = 750;
+	valueDB[3] = 1000;
+	valueDB[4] = 750;
+	valueDB[5] = 500;
+	valueDB[6] = 250;
+	valueDB[7] = 500;
+	valueDB[8] = 750;
+	valueDB[9] = 1000;
+	valueDB[10] = 750;
+	valueDB[11] = 500;
+	valueDB[12] = 250;
+	valueDB[13] = 1000;
+	valueDB[14] = 750;
+	valueDB[15] = 500;
+	valueDB[16] = 250;
+	valueDB[17] = 500;
+	valueDB[18] = 750;
+	valueDB[19] = 1000;
+	valueDB[20] = 750;
+	valueDB[21] = 500;
+	valueDB[22] = 250;
+	valueDB[23] = 500;
+
+	//weightDB
+	weightDB[0] = 30;
+	weightDB[1] = 30;
+	weightDB[2] = 4;
+	weightDB[3] = 3;
+	weightDB[4] = 4;
+	weightDB[5] = 2;
+	weightDB[6] = 3;
+	weightDB[7] = 3;
+	weightDB[8] = 3;
+	weightDB[9] = 4;
+	weightDB[10] = 35;
+	weightDB[11] = 35;
+	weightDB[12] = 35;
+	weightDB[13] = 30;
+	weightDB[14] = 30;
+	weightDB[15] = 30;
+	weightDB[16] = 4;
+	weightDB[17] = 30;
+	weightDB[18] = 15;
+	weightDB[19] = 30;
+	weightDB[20] = 5;
+	weightDB[21] = 20;
+	weightDB[22] = 20;
+	weightDB[23] = 20;
+	
+	compulsoryDB[0][0].insert(1);
+	compulsoryDB[0][0].insert(8);
+	compulsoryDB[0][0].insert(13);
+	compulsoryDB[0][0].insert(14);
+	compulsoryDB[0][0].insert(21);
+	compulsoryDB[0][0].insert(23);
+	compulsoryDB[0][0].insert(24);
+
+	compulsoryDB[0][1].insert(1);
+	compulsoryDB[0][1].insert(8);
+	compulsoryDB[0][1].insert(13);
+	compulsoryDB[0][1].insert(14);
+	compulsoryDB[0][1].insert(21);
+	compulsoryDB[0][1].insert(23);
+	compulsoryDB[0][1].insert(24);
+
+	compulsoryDB[1][0].insert(0);
+	compulsoryDB[1][0].insert(1);
+	compulsoryDB[1][0].insert(6);
+	compulsoryDB[1][0].insert(8);
+	compulsoryDB[1][0].insert(9);
+	compulsoryDB[1][0].insert(10);
+	compulsoryDB[1][0].insert(15);
+
+	compulsoryDB[1][1].insert(0);
+	compulsoryDB[1][1].insert(1);
+	compulsoryDB[1][1].insert(6);
+	compulsoryDB[1][1].insert(8);
+	compulsoryDB[1][1].insert(9);
+	compulsoryDB[1][1].insert(10);
+	compulsoryDB[1][1].insert(15);
+
+	compulsoryDB[2][0].insert(0);
+	compulsoryDB[2][0].insert(1);
+	compulsoryDB[2][0].insert(3);
+	compulsoryDB[2][0].insert(4);
+	compulsoryDB[2][0].insert(8);
+	compulsoryDB[2][0].insert(9);
+	compulsoryDB[2][0].insert(15);
+
+	compulsoryDB[2][1].insert(0);
+	compulsoryDB[2][1].insert(1);
+	compulsoryDB[2][1].insert(3);
+	compulsoryDB[2][1].insert(4);
+	compulsoryDB[2][1].insert(8);
+	compulsoryDB[2][1].insert(9);
+	compulsoryDB[2][1].insert(15);
+
+	compulsoryDB[3][0].insert(1);
+	compulsoryDB[3][0].insert(3);
+	compulsoryDB[3][0].insert(5);
+	compulsoryDB[3][0].insert(7);
+	compulsoryDB[3][0].insert(19);
+	compulsoryDB[3][0].insert(22);
+	compulsoryDB[3][0].insert(23);
+
+	compulsoryDB[3][1].insert(1);
+	compulsoryDB[3][1].insert(3);
+	compulsoryDB[3][1].insert(5);
+	compulsoryDB[3][1].insert(7);
+	compulsoryDB[3][1].insert(19);
+	compulsoryDB[3][1].insert(22);
+	compulsoryDB[3][1].insert(23);
+
+	compulsoryDB[4][0].insert(0);
+	compulsoryDB[4][0].insert(3);
+	compulsoryDB[4][0].insert(5);
+	compulsoryDB[4][0].insert(8);
+	compulsoryDB[4][0].insert(9);
+	compulsoryDB[4][0].insert(10);
+	compulsoryDB[4][0].insert(12);
+
+	compulsoryDB[4][1].insert(0);
+	compulsoryDB[4][1].insert(3);
+	compulsoryDB[4][1].insert(5);
+	compulsoryDB[4][1].insert(8);
+	compulsoryDB[4][1].insert(9);
+	compulsoryDB[4][1].insert(10);
+	compulsoryDB[4][1].insert(12);
+	
+	compulsoryDB[5][0].insert(0);
+	compulsoryDB[5][0].insert(2);
+	compulsoryDB[5][0].insert(4);
+	compulsoryDB[5][0].insert(6);
+	compulsoryDB[5][0].insert(16);
+	compulsoryDB[5][0].insert(17);
+	compulsoryDB[5][0].insert(20);
+	
+	compulsoryDB[5][1].insert(0);
+	compulsoryDB[5][1].insert(2);
+	compulsoryDB[5][1].insert(4);
+	compulsoryDB[5][1].insert(6);
+	compulsoryDB[5][1].insert(16);
+	compulsoryDB[5][1].insert(17);
+	compulsoryDB[5][1].insert(20);
+}
+
+pair<int,int> setItem(InputClass ip){
+
+	int domainOption = ip.domainOption;
+	int companyOption = ip.companyOption;
+
+	//first fill compulsory entries in chromosome that don't take part in GA
+	// but doubt is how to handle that exclusion
+	for(int i = 0; i < 24; ++i){
+		auto it = compulsoryDB[domainOption][companyOption].find(i);
+
+		if(it != compulsoryDB[domainOption][companyOption].end()){
+			item temp;
+			temp.v = valueDB[i];
+			temp.w = weightDB[i];
+			temp.index = i;
+			listPop.push_back(temp);
+		}
+	}
+
+	//filling non-compulsory and non-equipped skills
+	for(int i = 0; i < 24; ++i){
+		auto it = compulsoryDB[domainOption][companyOption].find(i);
+
+		if(it == compulsoryDB[domainOption][companyOption].end()){
+			auto it2 = ip.knownSkills.find(i);
+			if(it2 == ip.knownSkills.end()){
+				item temp;
+				temp.v = valueDB[i];
+				temp.w = weightDB[i];
+				temp.index = i;
+				listPop.push_back(temp);
+			}
+		}
+	}
+
+	int noOfCompulsory = compulsoryDB[domainOption][companyOption].size();
+	int noOfEquipped = 0;
+
+	//filling equipped skills
+	for(auto it = ip.knownSkills.begin(); it != ip.knownSkills.end(); ++it){
+		int cur = *it;
+
+		auto it2 = compulsoryDB[domainOption][companyOption].find(cur);
+
+		if(it2 == compulsoryDB[domainOption][companyOption].end()){
+			item temp;
+			temp.v = valueDB[cur];
+			temp.w = weightDB[cur];
+			temp.index = cur;
+			listPop.push_back(temp);
+
+			noOfEquipped++;
+		}
+	}
+
+	return make_pair(noOfCompulsory, noOfEquipped);
+}
+
 int main(){
 
 	// declare chromosome 
 	vector<chromosomes> c(POP);
 
 	// set item value weight -- later with a db
-	setItem();
+	// setItem();
+
+	initialiseDB();
+
+	InputClass ip = inputFunction();
+
+	pair<int, int> counterOfSkills = setItem(ip);
+	int noOfCompulsory = counterOfSkills.first;
+	int noOfEquipped = counterOfSkills.second;
 
 	// make initial population
 	make_population(c);
