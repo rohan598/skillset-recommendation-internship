@@ -1,4 +1,4 @@
-# Genetic Algorithm for securing a placement or internship 
+# Skillset recommendation system to aid engineering aspirants in securing an Internship
 
 ## Objective:
 To suggest a set of skills that increases the probability of getting an internship in a particular company belonging to a specific domain by navigating a trade-off between the skill-sets benefit and the time taken to achieve it.
