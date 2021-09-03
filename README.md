@@ -4,17 +4,14 @@
 To suggest a set of skills that increases the probability of getting an internship in a particular company belonging to a specific domain by navigating a trade-off between the skill-sets benefit and the time taken to achieve it.
 
 ## Work Done
-- Model the skill selection problem as a combinatorial optimization problem with multiple objectives.
-- Implement a Genetic Algorithm (GA) to solve this combinatorial optimization problem.
-- Propose the chromosome encoding for the problem.
-- Put forward a Fitness Function to evaluate the fitness of each individual belonging to the population of chromosomes.
-- Determine an Objective Function to combine opposing goals of skill set benefit and time taken to achieve it.
-- Evaluate various population initialization, parent selection, crossover, mutation, survivor selection, and GA termination techniques/operators
+- Consolidated a small dataset of various technical skills and categorized them as generic, company-specific, and domain-specific.
+- Modeled the skill selection problem as a combinatorial optimization problem with multiple objectives and employed a Genetic algorithm (GA) to solve it.
+- Proposed the chromosome encoding for the problem.
+- Established a Fitness Function to evaluate the fitness of each individual in the chromosome population.
+- Formulated an Objective Function to combine opposing goals of finding the best skillset while minimizing the time to achieve it.
+- Implemented a modular GA pipeline in C++ to evaluate and select the optimum set from the possible combinations of GA operations: population initialization, parent selection, crossover, mutation, survivor selection, and termination.
 
 ![Genetic Algorithm Flow Chart](/images/ga-flowchart.png)
 
-- Determine the optimal GA set up for the problem 
-
-## Software Stack
-- The entire code is implemented using C++
-- A uniform and consistent API is developed to ensure the modularity of each aspect of GA: population initialization, parent selection, crossover, mutation, survivor selection, and GA termination. 
+## Exploratory Work
+- A drawback of the GA implementation was binary skill membership, i.e., either a person possessed a skill or did not, making it challenging to model partially known skills. To approximate a realistic scenario of choosing partially known skills, I explored the use of fuzzy logic.
